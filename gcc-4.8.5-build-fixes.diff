@@ -1,4 +1,4 @@
-These patches are prepared followingthe suggestions and examples in:
+These patches are prepared following the suggestions and examples in:
 [1] https://stackoverflow.com/questions/41204632/unable-to-build-gcc-due-to-c11-errors
 [2] https://unix.stackexchange.com/questions/566650/how-do-i-compile-gcc-5-from-source
 diff -ru gcc-4.8.5/gcc/cp/cfns.gperf gcc-4.8.5/gcc/cp/cfns.gperf
