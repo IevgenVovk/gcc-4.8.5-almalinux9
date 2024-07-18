@@ -1,0 +1,262 @@
+These patches are prepared followingthe suggestions and examples in:
+[1] https://stackoverflow.com/questions/41204632/unable-to-build-gcc-due-to-c11-errors
+[2] https://unix.stackexchange.com/questions/566650/how-do-i-compile-gcc-5-from-source
+diff -ru gcc-4.8.5/gcc/cp/cfns.gperf gcc-4.8.5/gcc/cp/cfns.gperf
+--- gcc-4.8.5/gcc/cp/cfns.gperf	2013-01-11 05:38:27.000000000 +0900
++++ gcc-4.8.5/gcc/cp/cfns.gperf	2024-07-17 18:05:36.209279717 +0900
+@@ -1,3 +1,5 @@
++%language=C++
++%define class-name libc_name
+ %{
+ /* Copyright (C) 2000-2013 Free Software Foundation, Inc.
+ 
+@@ -16,14 +18,6 @@
+ You should have received a copy of the GNU General Public License
+ along with GCC; see the file COPYING3.  If not see
+ <http://www.gnu.org/licenses/>.  */
+-#ifdef __GNUC__
+-__inline
+-#endif
+-static unsigned int hash (const char *, unsigned int);
+-#ifdef __GNUC__
+-__inline
+-#endif
+-const char * libc_name_p (const char *, unsigned int);
+ %}
+ %%
+ # The standard C library functions, for feeding to gperf; the result is used
+diff -ru gcc-4.8.5/gcc/cp/cfns.h gcc-4.8.5/gcc/cp/cfns.h
+--- gcc-4.8.5/gcc/cp/cfns.h	2024-07-17 18:06:21.405009290 +0900
++++ gcc-4.8.5/gcc/cp/cfns.h	2024-07-17 18:08:52.275655876 +0900
+@@ -1,5 +1,5 @@
+-/* ANSI-C code produced by gperf version 3.0.3 */
+-/* Command-line: gperf -o -C -E -k '1-6,$' -j1 -D -N libc_name_p -L ANSI-C cfns.gperf  */
++/* C++ code produced by gperf version 3.0.4 */
++/* Command-line: gperf -o -C -E -k '1-6,$' -j1 -D -N libc_name_p -L C++ --output-file cfns.h cfns.gperf  */
+ 
+ #if !((' ' == 32) && ('!' == 33) && ('"' == 34) && ('#' == 35) \
+       && ('%' == 37) && ('&' == 38) && ('\'' == 39) && ('(' == 40) \
+@@ -28,7 +28,7 @@
+ #error "gperf generated tables don't work with this execution character set. Please report a bug to <bug-gnu-gperf@gnu.org>."
+ #endif
+ 
+-#line 1 "cfns.gperf"
++#line 3 "cfns.gperf"
+ 
+ /* Copyright (C) 2000-2013 Free Software Foundation, Inc.
+ 
+@@ -47,25 +47,18 @@
+ You should have received a copy of the GNU General Public License
+ along with GCC; see the file COPYING3.  If not see
+ <http://www.gnu.org/licenses/>.  */
+-#ifdef __GNUC__
+-__inline
+-#endif
+-static unsigned int hash (const char *, unsigned int);
+-#ifdef __GNUC__
+-__inline
+-#endif
+-const char * libc_name_p (const char *, unsigned int);
+ /* maximum key range = 391, duplicates = 0 */
+ 
+-#ifdef __GNUC__
+-__inline
+-#else
+-#ifdef __cplusplus
+-inline
+-#endif
+-#endif
+-static unsigned int
+-hash (register const char *str, register unsigned int len)
++class libc_name
++{
++private:
++  static inline unsigned int hash (const char *str, unsigned int len);
++public:
++  static const char *libc_name_p (const char *str, unsigned int len);
++};
++
++inline unsigned int
++libc_name::hash (register const char *str, register unsigned int len)
+ {
+   static const unsigned short asso_values[] =
+     {
+@@ -122,14 +115,8 @@
+   return hval + asso_values[(unsigned char)str[len - 1]];
+ }
+ 
+-#ifdef __GNUC__
+-__inline
+-#ifdef __GNUC_STDC_INLINE__
+-__attribute__ ((__gnu_inline__))
+-#endif
+-#endif
+ const char *
+-libc_name_p (register const char *str, register unsigned int len)
++libc_name::libc_name_p (register const char *str, register unsigned int len)
+ {
+   enum
+     {
+diff -ru gcc-4.8.5/gcc/cp/except.c gcc-4.8.5/gcc/cp/except.c
+--- gcc-4.8.5/gcc/cp/except.c	2013-10-25 22:49:48.000000000 +0900
++++ gcc-4.8.5/gcc/cp/except.c	2024-07-17 18:10:06.800743060 +0900
+@@ -1025,7 +1025,8 @@
+      unless the system headers are playing rename tricks, and if
+      they are, we don't want to be confused by them.  */
+   id = DECL_NAME (fn);
+-  return !!libc_name_p (IDENTIFIER_POINTER (id), IDENTIFIER_LENGTH (id));
++  return !!libc_name::libc_name_p (IDENTIFIER_POINTER (id),
++				   IDENTIFIER_LENGTH (id));
+ }
+ 
+ /* Returns nonzero if an exception of type FROM will be caught by a
+diff -ru gcc-4.8.5/gcc/cp/Make-lang.in gcc-4.8.5/gcc/cp/Make-lang.in
+--- gcc-4.8.5/gcc/cp/Make-lang.in	2013-01-11 05:38:27.000000000 +0900
++++ gcc-4.8.5/gcc/cp/Make-lang.in	2024-07-17 17:57:29.030907548 +0900
+@@ -115,7 +115,7 @@
+ # deleting the $(srcdir)/cp/cfns.h file.
+ $(srcdir)/cp/cfns.h:
+ endif
+-	gperf -o -C -E -k '1-6,$$' -j1 -D -N 'libc_name_p' -L ANSI-C \
++	gperf -o -C -E -k '1-6,$$' -j1 -D -N 'libc_name_p' -L C++ \
+ 		$(srcdir)/cp/cfns.gperf --output-file $(srcdir)/cp/cfns.h
+ 
+ #
+Лише у gcc-4.8.5/: gcc-4.8.5-build-fixes.diff
+diff -ru gcc-4.8.5/libgcc/config/aarch64/linux-unwind.h gcc-4.8.5/libgcc/config/aarch64/linux-unwind.h
+--- gcc-4.8.5/libgcc/config/aarch64/linux-unwind.h	2013-02-05 04:06:20.000000000 +0900
++++ gcc-4.8.5/libgcc/config/aarch64/linux-unwind.h	2024-07-18 09:45:01.553627329 +0900
+@@ -39,7 +39,7 @@
+   struct rt_sigframe
+   {
+     siginfo_t info;
+-    struct ucontext uc;
++    ucontext_t uc;
+   };
+ 
+   struct rt_sigframe *rt_;
+diff -ru gcc-4.8.5/libgcc/config/alpha/linux-unwind.h gcc-4.8.5/libgcc/config/alpha/linux-unwind.h
+--- gcc-4.8.5/libgcc/config/alpha/linux-unwind.h	2013-02-05 04:06:20.000000000 +0900
++++ gcc-4.8.5/libgcc/config/alpha/linux-unwind.h	2024-07-18 09:45:01.554627356 +0900
+@@ -51,7 +51,7 @@
+     {
+       struct rt_sigframe {
+ 	siginfo_t info;
+-	struct ucontext uc;
++	ucontext_t uc;
+       } *rt_ = context->cfa;
+       sc = &rt_->uc.uc_mcontext;
+     }
+diff -ru gcc-4.8.5/libgcc/config/bfin/linux-unwind.h gcc-4.8.5/libgcc/config/bfin/linux-unwind.h
+--- gcc-4.8.5/libgcc/config/bfin/linux-unwind.h	2013-02-05 04:06:20.000000000 +0900
++++ gcc-4.8.5/libgcc/config/bfin/linux-unwind.h	2024-07-18 09:45:01.554627356 +0900
+@@ -52,7 +52,7 @@
+ 	void *puc;
+ 	char retcode[8];
+ 	siginfo_t info;
+-	struct ucontext uc;
++	ucontext_t uc;
+       } *rt_ = context->cfa;
+ 
+       /* The void * cast is necessary to avoid an aliasing warning.
+diff -ru gcc-4.8.5/libgcc/config/i386/linux-unwind.h gcc-4.8.5/libgcc/config/i386/linux-unwind.h
+--- gcc-4.8.5/libgcc/config/i386/linux-unwind.h	2013-02-05 04:06:20.000000000 +0900
++++ gcc-4.8.5/libgcc/config/i386/linux-unwind.h	2024-07-18 09:45:07.432785502 +0900
+@@ -58,7 +58,7 @@
+   if (*(unsigned char *)(pc+0) == 0x48
+       && *(unsigned long long *)(pc+1) == RT_SIGRETURN_SYSCALL)
+     {
+-      struct ucontext *uc_ = context->cfa;
++      ucontext_t *uc_ = context->cfa;
+       /* The void * cast is necessary to avoid an aliasing warning.
+          The aliasing warning is correct, but should not be a problem
+          because it does not alias anything.  */
+@@ -138,7 +138,7 @@
+ 	siginfo_t *pinfo;
+ 	void *puc;
+ 	siginfo_t info;
+-	struct ucontext uc;
++	ucontext_t uc;
+       } *rt_ = context->cfa;
+       /* The void * cast is necessary to avoid an aliasing warning.
+          The aliasing warning is correct, but should not be a problem
+diff -ru gcc-4.8.5/libgcc/config/pa/linux-unwind.h gcc-4.8.5/libgcc/config/pa/linux-unwind.h
+--- gcc-4.8.5/libgcc/config/pa/linux-unwind.h	2014-10-26 23:52:49.000000000 +0900
++++ gcc-4.8.5/libgcc/config/pa/linux-unwind.h	2024-07-18 09:45:01.554627356 +0900
+@@ -80,7 +80,7 @@
+   struct sigcontext *sc;
+   struct rt_sigframe {
+     siginfo_t info;
+-    struct ucontext uc;
++    ucontext_t uc;
+   } *frame;
+ 
+   /* rt_sigreturn trampoline:
+diff -ru gcc-4.8.5/libgcc/config/sh/linux-unwind.h gcc-4.8.5/libgcc/config/sh/linux-unwind.h
+--- gcc-4.8.5/libgcc/config/sh/linux-unwind.h	2013-02-05 04:06:20.000000000 +0900
++++ gcc-4.8.5/libgcc/config/sh/linux-unwind.h	2024-07-18 09:45:01.554627356 +0900
+@@ -83,7 +83,7 @@
+ 	siginfo_t *pinfo;
+ 	void *puc;
+ 	siginfo_t info;
+-	struct ucontext uc;
++	ucontext_t uc;
+       } *rt_ = context->cfa;
+       /* The void * cast is necessary to avoid an aliasing warning.
+          The aliasing warning is correct, but should not be a problem
+@@ -180,7 +180,7 @@
+     {
+       struct rt_sigframe {
+ 	siginfo_t info;
+-	struct ucontext uc;
++	ucontext_t uc;
+       } *rt_ = context->cfa;
+       /* The void * cast is necessary to avoid an aliasing warning.
+          The aliasing warning is correct, but should not be a problem
+diff -ru gcc-4.8.5/libgcc/config/tilepro/linux-unwind.h gcc-4.8.5/libgcc/config/tilepro/linux-unwind.h
+--- gcc-4.8.5/libgcc/config/tilepro/linux-unwind.h	2013-02-05 04:06:20.000000000 +0900
++++ gcc-4.8.5/libgcc/config/tilepro/linux-unwind.h	2024-07-18 09:45:01.554627356 +0900
+@@ -61,7 +61,7 @@
+   struct rt_sigframe {
+     unsigned char save_area[C_ABI_SAVE_AREA_SIZE];
+     siginfo_t info;
+-    struct ucontext uc;
++    ucontext_t uc;
+   } *rt_;
+ 
+   /* Return if this is not a signal handler.  */
+diff -ru gcc-4.8.5/libgcc/config/xtensa/linux-unwind.h gcc-4.8.5/libgcc/config/xtensa/linux-unwind.h
+--- gcc-4.8.5/libgcc/config/xtensa/linux-unwind.h	2013-02-05 04:06:20.000000000 +0900
++++ gcc-4.8.5/libgcc/config/xtensa/linux-unwind.h	2024-07-18 09:45:01.555627383 +0900
+@@ -63,7 +63,7 @@
+ 
+   struct rt_sigframe {
+     siginfo_t info;
+-    struct ucontext uc;
++    ucontext_t uc;
+   } *rt_;
+ 
+   /* movi a2, __NR_rt_sigreturn; syscall */
+diff -ru gcc-4.8.5/libsanitizer/asan/asan_linux.cc gcc-4.8.5/libsanitizer/asan/asan_linux.cc
+--- gcc-4.8.5/libsanitizer/asan/asan_linux.cc	2013-01-23 20:41:33.000000000 +0900
++++ gcc-4.8.5/libsanitizer/asan/asan_linux.cc	2024-07-17 18:53:57.209763197 +0900
+@@ -25,6 +25,7 @@
+ #include <sys/types.h>
+ #include <fcntl.h>
+ #include <pthread.h>
++#include <signal.h>
+ #include <stdio.h>
+ #include <unistd.h>
+ #include <unwind.h>
+diff -ru gcc-4.8.5/libsanitizer/tsan/tsan_platform_linux.cc gcc-4.8.5/libsanitizer/tsan/tsan_platform_linux.cc
+--- gcc-4.8.5/libsanitizer/tsan/tsan_platform_linux.cc	2013-02-21 19:57:10.000000000 +0900
++++ gcc-4.8.5/libsanitizer/tsan/tsan_platform_linux.cc	2024-07-17 19:00:04.864174012 +0900
+@@ -39,7 +39,7 @@
+ #include <sched.h>
+ #include <dlfcn.h>
+ #define __need_res_state
+-#include <resolv.h>
++#include "bits/types/res_state.h"
+ 
+ extern "C" int arch_prctl(int code, __sanitizer::uptr *addr);
+ 
