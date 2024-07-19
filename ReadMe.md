@@ -1,4 +1,4 @@
-*** Description ***
+# Description
 
 AlmaLinux 9 Docker image of GCC 4.8.5 compiler, used in RHEL 7 and its derivatives (e.g. CentOS 7). It is meant to assist developers porting legacy applications from RHEL / CentOS 7 to newer RHEL 9 -like distributions as Red Hat [does not plan](https://access.redhat.com/solutions/19458) to deliver compatibility compilers for its 9th release.
 
