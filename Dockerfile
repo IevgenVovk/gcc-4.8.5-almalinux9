@@ -45,7 +45,7 @@ RUN make install
 
 # Cleanup
 WORKDIR /
-RUN rm -rf /tmp/gcc-4.8.5/
+RUN rm -rf /tmp/gcc-4.8.5/ /tmp/gcc-4.8.5.tar.gz /tmp/gcc-4.8.5-build-fixes.diff
 RUN rm -rf /root/.local/
 ENV CC=""
 ENV CXX=""
